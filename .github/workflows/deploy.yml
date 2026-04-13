@@ -1,0 +1,24 @@
+on:
+    push:
+        branches:
+            - main
+name: Deploy website on push
+
+jobs:
+    web-deploy:
+        name: Deploy Node JS
+        runs-on: ubuntu-latest
+        environment: production
+        steps:
+            # Get latest code
+            - name: Get latest code
+              uses: actions/checkout@v4
+            #sync files via FTP
+            - name: Sync files via FTP
+              uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+              with:
+                server: 86.107.77.98
+                username: ${{ secrets.FTP_USER }}
+                password: ${{ secrets.FTP_PASS }}
+                log-level: verbose
+                protocol: ftp
