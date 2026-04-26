@@ -13,18 +13,23 @@
   "license": "GPL-3.0-only",
   "author": "Ken",
   "type": "module",
-  "main": "bot.js",
+  "main": "bedrock.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon ."
   },
   "dependencies": {
+    "@google/genai": "^1.50.1",
+    "bedrock-protocol": "^3.55.0",
     "canvas": "^3.2.3",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "joi": "^18.1.2",
     "log4js": "^6.9.1",
     "mineflayer": "^4.37.0",
     "morgan": "^1.10.1",
+    "openai": "^6.34.0",
     "prismarine-viewer": "^1.33.0",
     "strip-ansi": "^7.2.0"
   }

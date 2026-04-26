@@ -35,7 +35,13 @@ const sendResponse = (res, statusCode, success, message, data = null, errors = n
         response.errors = formatError(errors)
     }
 
-    return res.status(statusCode).json(response)
+    // Handle/replace bigint for JSON.Stringify()
+    const jsonBigIntReplacer = (_, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+
+    res.status(statusCode)
+    res.setHeader('Content-Type', 'application/json')
+    return res.send(JSON.stringify(response, jsonBigIntReplacer))
 }
 
 export default sendResponse

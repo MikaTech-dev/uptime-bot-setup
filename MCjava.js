@@ -3,25 +3,26 @@ import "dotenv/config"
 import express from "express"
 import { logger } from "./src/utils/logger.config.js";
 import sendResponse from "./src/utils/response.middleware.js"
-import router from "./src/bot_health/botInfoRoute.js"
+import router from "./src/routes/javaInfoRoute.js"
 import morgan from "morgan";
 import { mineflayer as botViewer } from 'prismarine-viewer';
 
 const app = express()
-const host = process.env.HOST;
-const username = process.env.USERNAME;
+const mcHost = process.env.MC_HOST;
+const mcUsername = process.env.MC_USERNAME;
 const mcPort = process.env.MC_PORT;
 const mcVer = process.env.MC_VERSION;
 const viewerPort = process.env.VIEWER_PORT;
 const appPort = process.env.APP_PORT;
 
 const botOptions = {
-    host: host,
-    username: username
+    host: mcHost,
+    username: mcUsername,
+    hideErrors: false
 }
 
 if (mcPort) {
-    botOptions.port = mcPort
+    botOptions.port = parseInt(mcPort)
 }
 
 if (mcVer) {
@@ -41,10 +42,10 @@ const bot = new mineflayer.createBot(
 );
 
 bot.once("spawn", ()=> {
-    logger.info(`Bot spawned into world ${host} successfully`)
+    logger.info(`Bot spawned into world ${mcHost} successfully`)
     try{
         botViewer(bot, {
-            port: viewerPort,
+            port: parseInt(viewerPort) || 3000,
             firstPerson: false
         });
         logger.info(`Viewer active at http://localhost:${viewerPort}`);
@@ -71,14 +72,23 @@ bot.on("kicked", (reason) => {
    } */
     botState.kickReason = reason
     botState.isKicked = true
-    logger.error (`Bot kicked, ${host} said: \n${botState.kickReason}`);
+    logger.error (`Bot kicked, ${mcHost} said: \n${botState.kickReason}`);
 });
 
 
 bot.on("error", (err) => {
     botState.errorReason = err
     botState.isFailedToConnect = true
-    logger.error (`Bot failed to connect to host "${host}"\n`, err);
+    logger.error (`Bot failed to connect to mcHost "${mcHost}"\n`, err);
+});
+
+bot.on("end", (reason) => {
+    logger.warn(`Bot disconnected from ${mcHost}: ${reason}`);
+    botState.isFailedToConnect = true;
+});
+
+bot.on("kicked", (reason) => {
+    logger.error(`Bot was kicked from ${mcHost}`);
 });
 
 
