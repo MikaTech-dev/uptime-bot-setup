@@ -1,8 +1,9 @@
 import { logger } from "../utils/logger.config.js";
 import { askGemini } from "./ask.gemini.js";
 import { sendChat } from "./chat.bedrock.js";
+import { startClient } from "../../bedrock.js";
 
-export const handleText = async (data) => {
+export const handleText = async (data, client) => {
     if (data.category !== 'message_only') {
         logger.info(data);
     }

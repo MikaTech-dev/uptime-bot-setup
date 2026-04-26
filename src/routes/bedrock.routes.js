@@ -88,10 +88,8 @@ router.get("/bot/server", async (req, res) => {
 router.post ("/bot/chat", async (req, res) => {
     try {
         logger.info('Validating request body...')
-        logger.warn(req.body)
         const validationResult = await verifySchema(req.body)
         let { message } = validationResult
-        logger.info('Sending message...')
         await sendChat(message)
         logger.info('Sent message successfully')
         return sendResponse(res, 200, true, 'Sent chat message to server successfully', message);

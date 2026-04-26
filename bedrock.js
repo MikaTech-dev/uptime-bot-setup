@@ -7,7 +7,7 @@ import "dotenv/config"
 import sendResponse from "./src/utils/response.middleware.js"
 import router from "./src/routes/bedrock.routes.js"
 import { isBotStillInServer } from "./src/services/client.status.js"
-import { startAntiAFK } from "./src/services/client.movement.js"
+import { antiAFKAnim } from "./src/services/client.movement.js"
 import { handleText } from "./src/services/handle.texts.js"
 import { sendChat } from "./src/services/chat.bedrock.js"
 
@@ -46,6 +46,7 @@ const clientStatus = {
 }
 
 export let client
+export let runtimeEntityId
 
 function startClient() {
     client = bedrock.createClient(botOptions);
@@ -68,6 +69,7 @@ function startClient() {
             y: packet.spawn_position.y,
             z: packet.spawn_position.z
         };
+        runtimeEntityId = packet.runtime_entity_id; // entity id seems to be giving issues, it is only needed to cause swing for anti afk
         logger.info(`Initial position set from start_game: ${client.pos.x}, ${client.pos.y}, ${client.pos.z}`);
     });
 
@@ -75,17 +77,17 @@ function startClient() {
         logger.info('Spawned successfully, attempting to announce');
         sendChat(`Bot: ${client.username}, just joined`)
         
-/*         logger.info(`My EID: ${client.entityId} (Type: ${typeof client.entityId})`);
+        logger.info(`My EID: ${client.entityId} (Type: ${typeof client.entityId})`);
         
         client.on('move_player', (packet) => {
             // Use BigInt() to ensure both sides of the comparison match types
             if (BigInt(packet.runtime_id) === BigInt(client.entityId)) {
                 client.pos = packet.position;
             }
-        }); */
+        });
 
         client.on('text', (packet) => {
-            handleText(packet)
+            handleText(packet, client)
         });
 
     });
@@ -161,3 +163,5 @@ app.use((req, res) => {
 app.listen(appPort, (req, res) => {
     logger.info(`App Started successfully http://localhost:${appPort}`)
 })
+
+antiAFKAnim(client);
