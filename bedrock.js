@@ -7,7 +7,7 @@ import "dotenv/config"
 import sendResponse from "./src/utils/response.middleware.js"
 import router from "./src/routes/bedrock.routes.js"
 import { isBotStillInServer } from "./src/services/client.status.js"
-import { antiAFKAnim } from "./src/services/client.movement.js"
+import { setupMovement, state, startJumpLoop } from "./src/services/client.movement.js"
 import { handleText } from "./src/services/handle.texts.js"
 import { sendChat } from "./src/services/chat.bedrock.js"
 
@@ -50,6 +50,7 @@ export let runtimeEntityId
 
 function startClient() {
     client = bedrock.createClient(botOptions);
+    setupMovement(client);
 
     client.lastHeartbeat = 0
 
@@ -64,6 +65,7 @@ function startClient() {
 
     client.on('start_game', (packet) => {
         // Bedrock stores the spawn point in the spawn_position object
+        client.write("serverbound_loading_screen", { type: 2 })
         client.pos = {
             x: packet.spawn_position.x,
             y: packet.spawn_position.y,
@@ -73,8 +75,9 @@ function startClient() {
         logger.info(`Initial position set from start_game: ${client.pos.x}, ${client.pos.y}, ${client.pos.z}`);
     });
 
-    client.on('spawn', (packet) => {
+    client.on('spawn', () => {
         logger.info('Spawned successfully, attempting to announce');
+        startJumpLoop(client);
         sendChat(`Bot: ${client.username}, just joined`)
         
         logger.info(`My EID: ${client.entityId} (Type: ${typeof client.entityId})`);
@@ -109,6 +112,13 @@ function startClient() {
     // Client error logger
     client.on('error', (err) => {
         logger.error('An error ocurred: \n', err);
+        clientStatus.isError = true;
+        // Attempt reconnect
+        startClient();
+    })
+
+    client.on('close', (err) => {
+        logger.error('Client connection was closed unexpectedly: \n', err);
         clientStatus.isError = true;
         // Attempt reconnect
         startClient();
@@ -163,5 +173,3 @@ app.use((req, res) => {
 app.listen(appPort, (req, res) => {
     logger.info(`App Started successfully http://localhost:${appPort}`)
 })
-
-antiAFKAnim(client);
