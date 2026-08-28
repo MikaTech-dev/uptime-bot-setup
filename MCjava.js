@@ -106,7 +106,8 @@ function createBot() {
 
     bot.on("chat", (username, message) => {
         if (username === bot.username) return;
-        if (username !== bot.username && message === "Sleep") disconnectBot(true); logger.info([`[SLEEP] Bot will reconnect to allow players to sleep`]);
+        if (username !== bot.username && message.toLowerCase() === "sleep") disconnectBot(true); logger.info([`[SLEEP] Bot Sleep Reconnect Initiated`]);
+        if (username !== bot.username && message.toLowerCase() === "disconnect") disconnectBot(false); logger.info([`[MANUAL DISCONNECT] Bot disconnected by ${username}`]);
         logger.info(`[CHAT] <${username}> ${message}`);
     });
 
