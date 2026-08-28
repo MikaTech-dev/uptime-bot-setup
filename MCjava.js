@@ -106,11 +106,8 @@ function createBot() {
 
     bot.on("chat", (username, message) => {
         if (username === bot.username) return;
+        if (username !== bot.username && message === "Sleep") disconnectBot(true); logger.info([`[SLEEP] Bot will reconnect to allow players to sleep`]);
         logger.info(`[CHAT] <${username}> ${message}`);
-    });
-
-    bot.on("chat", (message) => {
-        if (message.includes("Sleep")) disconnectBot(true);
     });
 
     bot.on("whisper", (username, message) => {
