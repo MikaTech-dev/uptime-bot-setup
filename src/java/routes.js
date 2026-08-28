@@ -6,12 +6,13 @@ const router = Router();
 
 /**
  * Creates Java bot routes.
- * Accepts a getter function that returns the current { bot, botState } so
- * the routes always reflect the latest reconnected bot instance.
+ * Accepts a getter function that returns the current { bot, botState } and
+ * actions to control bot lifecycle.
  *
  * @param {() => { bot: import("mineflayer").Bot | null, botState: object }} getBotContext
+ * @param {{ disconnectBot?: (allowReconnect?: boolean) => boolean, connectBot?: () => void }} [actions]
  */
-export function createJavaRoutes(getBotContext) {
+export function createJavaRoutes(getBotContext, actions = {}) {
     router.get("/", (_req, res) => {
         sendResponse(res, 200, true, "Java MC bot is up and running");
     });
@@ -78,6 +79,51 @@ export function createJavaRoutes(getBotContext) {
             healthy,
             healthy ? "Healthy" : "Unhealthy"
         );
+    });
+
+    router.all(["/disconnect", "/bot/disconnect"], (req, res) => {
+        try {
+            const { bot } = getBotContext();
+            const reconnect = req.query.reconnect === "true";
+
+            if (!actions.disconnectBot) {
+                return sendResponse(res, 500, false, "Disconnect action is not configured");
+            }
+
+            if (!bot) {
+                return sendResponse(res, 200, true, "Bot is already disconnected");
+            }
+
+            actions.disconnectBot(reconnect);
+            return sendResponse(
+                res,
+                200,
+                true,
+                `Bot disconnected successfully.${reconnect ? " Auto-reconnect is enabled." : " Auto-reconnect is paused."}`
+            );
+        } catch (error) {
+            logger.error("Error disconnecting bot\n", error);
+            return sendResponse(res, 500, false, "Error disconnecting bot", null, error);
+        }
+    });
+
+    router.all(["/connect", "/bot/connect"], (_req, res) => {
+        try {
+            const { bot } = getBotContext();
+            if (bot && bot.entity) {
+                return sendResponse(res, 200, true, "Bot is already connected");
+            }
+
+            if (!actions.connectBot) {
+                return sendResponse(res, 500, false, "Connect action is not configured");
+            }
+
+            actions.connectBot();
+            return sendResponse(res, 200, true, "Bot connection sequence initiated");
+        } catch (error) {
+            logger.error("Error connecting bot\n", error);
+            return sendResponse(res, 500, false, "Error connecting bot", null, error);
+        }
     });
 
     return router;

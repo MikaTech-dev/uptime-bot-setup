@@ -56,8 +56,36 @@ function buildBotOptions() {
     return opts;
 }
 
+let shouldAutoReconnect = true;
+let reconnectTimeout = null;
+
+function disconnectBot(allowReconnect = false) {
+    shouldAutoReconnect = allowReconnect;
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+    }
+
+    if (afkController) {
+        afkController.stop();
+        afkController = null;
+    }
+
+    if (bot) {
+        logger.info(`Disconnecting bot manually (allowReconnect: ${allowReconnect})...`);
+        try {
+            bot.quit("Disconnected via API");
+        } catch (e) {
+            logger.warn(`Error while quitting bot: ${e.message}`);
+        }
+        return true;
+    }
+    return false;
+}
+
 function createBot() {
     resetBotState();
+    shouldAutoReconnect = true;
 
     const opts = buildBotOptions();
     logger.info(`Connecting to ${MC_HOST}${MC_PORT ? ":" + MC_PORT : ""} as "${opts.username}"${MC_VERSION ? " (v" + MC_VERSION + ")" : ""}${IS_OFFLINE ? " [offline mode]" : ""}`);
@@ -79,6 +107,10 @@ function createBot() {
     bot.on("chat", (username, message) => {
         if (username === bot.username) return;
         logger.info(`[CHAT] <${username}> ${message}`);
+    });
+
+    bot.on("chat", (message) => {
+        if (message.includes("Sleep")) disconnectBot(true);
     });
 
     bot.on("whisper", (username, message) => {
@@ -133,9 +165,14 @@ function createBot() {
             afkController = null;
         }
 
+        if (!shouldAutoReconnect) {
+            logger.info("Auto-reconnect is paused following manual disconnect.");
+            return;
+        }
+
         // Schedule reconnect
         logger.info(`Reconnecting in ${RECONNECT_DELAY_MS / 1000}s...`);
-        setTimeout(() => {
+        reconnectTimeout = setTimeout(() => {
             createBot();
         }, RECONNECT_DELAY_MS);
     });
@@ -150,7 +187,10 @@ app.use(express.json());
 app.use(morgan("tiny", { stream }));
 
 // Routes — getter ensures they always see the latest bot instance
-const javaRoutes = createJavaRoutes(() => ({ bot, botState }));
+const javaRoutes = createJavaRoutes(
+    () => ({ bot, botState }),
+    { disconnectBot, connectBot: createBot }
+);
 app.use("/", javaRoutes);
 
 app.listen(APP_PORT, () => {
@@ -161,4 +201,4 @@ app.listen(APP_PORT, () => {
 
 createBot();
 
-export { bot, botState };
+export { bot, botState, disconnectBot, createBot };

@@ -16,7 +16,9 @@
   "main": "bedrock.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon ."
+    "dev": "nodemon .",
+    "bedrock": "nodemon bedrock.js",
+    "java": "nodemon MCjava.js"
   },
   "dependencies": {
     "@google/genai": "^1.50.1",
